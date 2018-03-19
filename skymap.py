@@ -1,4 +1,5 @@
 
+import numpy as np
 from starGraphics import starGraphics as sg
 from project import project as project
 from astronomy import astronomy as astronomy
@@ -19,7 +20,7 @@ class astrolabe:
 
         self.pltConstellationLines = 1
         self.pltNebula = 0
-        self.pltConstellationBoundaries = 1
+        self.pltConstellationBoundaries = 0
         self.pltConstellationLabels = 1
         self.pltEclipticLine = 1
         self.pltDecLines = 1
@@ -34,16 +35,18 @@ class astrolabe:
         lat = 30 
         decMax = -90 + lat 
         rMax = pltLimit
-        self.plotStarMap(decMax, rMax)
+        ptype = 3
+
+        self.plotStarMap(ptype, decMax, rMax)
         self.g.endPlot("rete")
 
 
 
         
 
-    def plotStarMap(self, decMax, rMax):
+    def plotStarMap(self, ptype, decMax, rMax):
 
-        self.p.setProjection(3, 0, 90, decMax, rMax )
+        self.p.setProjection(ptype, 0, 90, decMax, rMax )
         lst = 9.
         lat = 36.
         self.p.setTime(lst, lat)
@@ -71,8 +74,7 @@ class astrolabe:
             self.g.plotConstellationBoundaries(pConstellationBoundaries)
 
         if self.pltConstellationLabels:
-            self.g.plotConstellationLabels2(pConstellationBoundaries)
-            #self.g.plotConstellationLabels(pConstellationBoundaries)
+            self.plotConstellationLabels()  
         
         if self.pltEclipticLine:
             eclipLine = self.a.createEclipticPath()
@@ -81,7 +83,8 @@ class astrolabe:
 
         if self.pltDecLines:
             decList = [90, 80, 70, 60, 50, 40, 30, 20, 10, 0, -10, -20]
-            self.g.plotDecCircles(decList)
+            decList = [80, 70, 60, 50, 40, 30, 20, 10, 0, -10, -20]
+            self.g.plotDecEllipses(decList)
 
         if self.pltRALines:
             #raHours = [0]
@@ -100,7 +103,27 @@ class astrolabe:
         self.g.plotSimpleLine(pAltLine)
 
 
- 
+    def plotConstellationLabels(self): 
+
+        cLabelList = []
+        fn = "constellation_list.txt"
+        ff = open(fn,"r")
+        clist = ff.readlines()
+        ff.close()
+        for cc in clist:
+          c = cc.split(", ")
+          sname = c[0]
+          label = c[1]
+          lra = float(c[2])
+          ldec = float(c[3])
+          xcenter, ycenter = self.p.projectToPolar(lra, ldec) 
+          theta = np.arctan2(ycenter,xcenter)*180./np.pi + 90.
+
+          cLabelList.append([xcenter, ycenter, theta, label.upper()])
+  
+        self.g.plotConstellationLabels(cLabelList)
+
+
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ import ephem
 import descartes
 from shapely.geometry import Polygon 
 
+from matplotlib.font_manager import FontProperties
 
 
 
@@ -16,9 +17,10 @@ class starGraphics:
 
     def __init__(self, xmin, xmax, ymin, ymax, rmax):
 
-        figureSize = 10.
+        figureSize = 10.5
+        #figureSize = 6 
         aspectratio = 0
-        margin = 0.1
+        margin = 0.25
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
@@ -33,11 +35,14 @@ class starGraphics:
         self.decCircleColor = "black"
         self.raCircleColor = "black"
         self.plateCircleColor = "black"
+        self.plateFontColor = "white"
+        self.plateFontSize = "12"
         self.horizonLineColor = "black"
         self.starColor = "black"
         self.constellationLineColor = "black"
         self.constellationBoundaryColor = "red"
-
+        self.starColor = "blue"
+        self.starColor = "black"
 
         fig = plt.figure( figsize=(figureSize, figureSize))
         fig.patch.set_facecolor(self.mapColor)
@@ -91,11 +96,11 @@ class starGraphics:
 #        self.maglist = [120, 90, 60, 30,  10,  1, 0]
 #        self.maglist = [240, 120, 90, 60, 30,  10,  1, 0]
 #        self.maglist = [70, 50, 35, 22,  10,  1, 0]
-        self.maglist = [30, 22, 15, 10, 6,  1, 0]
+        #self.maglist = [30, 22, 15, 10, 6,  1, 0]
+        self.maglist = [30, 20, 12, 8, 5,  2, 0]
 
 
     def drawBoundingCircle(self, colorname):
-        print "DUCK"
         circle1 = plt.Circle( (0,0), self.Rmax, linewidth=5, color=colorname, fill=False)
         self.ax.add_artist(circle1)
 
@@ -126,7 +131,6 @@ class starGraphics:
                 xx.append(x)
                 yy.append(y)
                 ss.append(self.maglist[size])
-        self.starColor = "blue"
         plt.scatter(xx,yy,s=ss,color=self.starColor)
 
     def plotSimpleLine(self, sline):
@@ -209,7 +213,6 @@ class starGraphics:
             minor = 0.01
 
             if mag < limitingMag:
-#                print mag, ra, dec
                 xx.append(ra)
                 yy.append(dec)
                 a.append(major)
@@ -260,14 +263,12 @@ class starGraphics:
         yy = []
         ss = []
         for s in starList:
-            #print "XXXXXXXX", s
             x1 = s[self.xIndex]
             y1 = s[self.yIndex]
             mag = s[self.sizeIndex]
             starLabel = s[10]
             theta = np.arctan2(y1,x1)*180./np.pi + 90.
             halign = s[-1]
-            #print starLabel
             ra = s[5]
             dec = s[6]
             
@@ -289,71 +290,20 @@ class starGraphics:
    
 
 
-    def plotConstellationLabels(self, constellationBoundaries):
+    def plotConstellationLabels(self, cLabelList):
+        for c in cLabelList:
+          xcenter = c[0]
+          ycenter = c[1]
+          theta = c[2]
+          label = c[3]
+          if label.find(" ") > -1:
+            ll = label.split(" ")
+            label = ll[0] + "\n " + ll[1]
+ 
+          if self.inPlotBounds(xcenter, ycenter):
+            plt.text(xcenter, ycenter, label, rotation=theta, horizontalalignment="center", verticalalignment="center", fontsize=6)
 
-        fo = "planisphere_constellations.txt"
-        ff2 = open(fo, "w")
-        fn = "constellatlion_list.txt"
-        ff = open(fn,"r")
-        clist = ff.readlines()
-        ff.close()
-        for ic in range(len(constellationBoundaries)):
-            
-            c = constellationBoundaries[ic]
-            label = c[0]
-            lines = c[1]
-            xcenter = 0
-            ycenter = 0
-            label1 = clist[ic-1].strip()
-            label = label1.upper()
-            label_out = label
-            if label.find(" ") > -1:
-              ll = label.split(" ")
-              label = ll[0] + "\n " + ll[1]
-            for l in lines:
-                x = float(l[0])
-                y = float(l[1])
-                xcenter = xcenter + x
-                ycenter = ycenter + y
-            if len(lines) > 0:
-                xcenter = xcenter / float(len(lines))
-                ycenter = ycenter / float(len(lines))                
-                theta = np.arctan2(ycenter,xcenter)*180./np.pi + 90.
-                # figure out the RA and Dec based on the xcenter and ycenter 
 
-                if self.inPlotBounds(xcenter, ycenter):
-                    label = label.upper()
-                    plt.text(xcenter, ycenter, label, rotation=theta, horizontalalignment="center", verticalalignment="center", fontsize=6)
-                    
-                    lra, ldec = self.p.polarToRADec(xcenter, ycenter)
-                    #print "label ra,dec = ", lra, ldec
-                    lra = int(lra * 100)/100.
-                    ldec = int(ldec * 100) / 100.
-                    theta = int(theta*10)/10.
-                    sss = label_out + ", " + str(lra) + ", " + str(ldec) + ", " + str(theta) + "\n"
-                    ff2.write(sss)
-        ff2.close()
-
-    def plotConstellationLabels2(self, constellationBoundaries):
-        fo = "planisphere_constellations.txt"
-        ff = open(fo, "r")
-        clist = ff.readlines()
-        ff.close()
-        for ic in range(len(clist)):
-            c = clist[ic].split(", ")
-            label = c[0]
-            lra = float(c[1])
-            ldec = float(c[2])
-            #projectToPolar
-            xcenter, ycenter = self.p.projectToPolar( lra, ldec)
-
-            theta= float(c[3])
-            if label.find(" ") > -1:
-              ll = label.split(" ")
-              label = ll[0] + "\n " + ll[1]
-              #if self.inPlotBounds(xcenter, ycenter):
-            if 1 == 1:
-              plt.text(xcenter, ycenter, label, rotation=theta, horizontalalignment="center", verticalalignment="center", fontsize=5)
 
      
 
@@ -397,7 +347,6 @@ class starGraphics:
 
 
     def plotLabels(self, plt,ax, plotSize, location, name):
-        #    print location, name
         x1 = 0
         y1 = 0 - plotSize/3.3
         plt.text(x1, y1, "Local Solar Time", horizontalalignment="center", verticalalignment="center", fontsize=14)
@@ -441,8 +390,6 @@ class starGraphics:
                 ycenter = ycenter / float(len(lines))        
             theta = 0
             ss = label + ", " + clist[ii-1].strip() + ", " + str(xcenter) + ", " + str(ycenter) + ", 0.0"
-            #print ss
-            #print label, clist[ii-1], xcenter, ycenter, theta
 
     #plt.plot([xstart, xend], [ystart, yend],color='k')
 
@@ -588,16 +535,12 @@ class starGraphics:
         return self.sun.ra # + np.pi
 
 
-    def plate(self):
+    def plate(self, ptype, lat, decMax, rMax):
 
         lw = 1
         pltLimit = 1
-        decMax = -23.5
-        lat = 30 
-        decMax = -90 + lat 
         rMax = pltLimit
-        self.p.setProjection(1, 0, 90, decMax, rMax )
-   #     self.plotRete(decMax, rMax)
+        self.p.setProjection(ptype, 0, 90, decMax, rMax )
 
 #        circle1 = plt.Circle( (0,0), self.Rmax, linewidth=lw, color=self.plateCircleColor, fill=False)
 #        self.ax.add_artist(circle1)
@@ -615,18 +558,35 @@ class starGraphics:
         circleShape = Polygon(p)
         n = 100 
         hrotate = 18
+
+        lon = 0
+        #self.a.setLatLong(lat, lon)
         altLine = self.a.createAltPath( 0.0, n, hrotate)
         pAltLine = self.p.projectSimpleLine(altLine)
+        #self.plotSimpleLine(pAltLine)
+
 
         horizonShape = Polygon(pAltLine)
-        plateShape = circleShape.difference(horizonShape)
+        if ptype == 2:
+          plateShape = circleShape.difference(horizonShape)
+        elif ptype == 4:
+          plateShape = horizonShape.intersection(circleShape)
+        else:
+          print "ptype = ", ptype, " error in plate"
+          exit()
+
 
         ax = plt.gca()
-        ax.add_patch(descartes.PolygonPatch(plateShape, fc='b', ec='k', alpha=0.2))
+        ax.add_patch(descartes.PolygonPatch(plateShape, fc='b', ec='k', alpha=0.4))
         #ax.add_patch(descartes.PolygonPatch(ll1, fc='r', ec='k', alpha=0.2))
 
 
-
+        font0 = FontProperties()
+        fontl = font0.copy()
+        fontl.set_family("sans-serif") # ['serif', 'sans-serif', 'cursive', 'fantasy', 'monospace']
+        fontl.set_style("normal") # ['normal', 'italic', 'oblique']
+        fontl.set_weight("bold")  # ['light', 'normal', 'medium', 'semibold', 'bold', 'heavy', 'black']
+        
 
         rhr = rMax * 0.93
         for hr in range(24):
@@ -642,7 +602,7 @@ class starGraphics:
           else:
             ss = "NOON"
           if hr > 14 or hr < 10:
-            plt.text(x, y, ss, fontsize="7", verticalalignment="center", horizontalalignment="center", rotation=rot, color=self.plateCircleColor)
+            plt.text(x, y, ss, fontproperties=fontl, fontsize=self.plateFontSize, verticalalignment="center", horizontalalignment="center", rotation=rot, color=self.plateFontColor)
  
           dth = 4.0
           theta = (float(hr) * 15. + dth) * np.pi / 180. 
@@ -656,7 +616,7 @@ class starGraphics:
           else:
             ss = ""
           if hr > 14 or hr < 10:
-            plt.text(x, y, ss, fontsize="7", color=self.plateCircleColor, verticalalignment="center", horizontalalignment="center", rotation=rot)
+            plt.text(x, y, ss, fontsize=self.plateFontSize, fontproperties=fontl, color=self.plateFontColor, verticalalignment="center", horizontalalignment="center", rotation=rot)
       
         # 15 minute marks
         rhr = rMax 
@@ -673,7 +633,7 @@ class starGraphics:
             x2 = rhr3 * np.sin(-theta)
             y2 = rhr3 * np.cos(-theta)
           rot = 180. + float(hr)  * 15.
-          plt.plot([x1,x2], [y1,y2], linewidth=2, color=self.plateCircleColor)
+          plt.plot([x1,x2], [y1,y2], linewidth=2, color=self.plateFontColor)
 
 #          plt.text(x, y, "x", fontsize=36, verticalalignment="center", horizontalalignment="center", rotation=rot)
   
@@ -681,9 +641,25 @@ class starGraphics:
         #quote = "When I heard the learn'd astronomer, \n When the proofs, the figures, were arranged in columns before me, \n When I was shows the charts and diagrams, to add, divide, and measure them, \n When I sitting heard the astronomer where he lectured with much applause from the lecture-room, \n How soon unaccountable I became tired and sick, \n Till rising and glidering out I wander'd off by myself, \n In the mystical moist night-air, and from time to time, \n Look'd up in perfect silence at the star. \n  Walt Whitman, The Learn'd Astronomer"
         #plt.text(-0.5, 0.4, quote, fontsize=5, verticalalignment = "center", horizontalalignment="left")
 
+        font0 = FontProperties()
+        fontq = font0.copy()
+        fontq.set_family("sans-serif") # ['serif', 'sans-serif', 'cursive', 'fantasy', 'monospace']
+        fontq.set_style("italic") # ['normal', 'italic', 'oblique']
+        fontq.set_weight("bold")  # ['light', 'normal', 'medium', 'semibold', 'bold', 'heavy', 'black']
+        
 
         quote = "For my part, I know nothing with certainty, \n but the sight of the stars makes me dream.  \n - Vincent Van Gogh"
-        plt.text(-0.0, 0.5, quote, fontsize=10, verticalalignment = "center", horizontalalignment="center")
+        plt.text(-0.0, 0.4, quote, fontsize=10, fontproperties=fontq, verticalalignment = "center", horizontalalignment="center", color=self.plateFontColor)
+
+        # https://matplotlib.org/examples/pylab_examples/fonts_demo.html
+        font0 = FontProperties()
+        fontt = font0.copy()
+        fontt.set_family("sans-serif") # ['serif', 'sans-serif', 'cursive', 'fantasy', 'monospace']
+        fontt.set_style("italic") # ['normal', 'italic', 'oblique']
+        fontt.set_weight("bold")  # ['light', 'normal', 'medium', 'semibold', 'bold', 'heavy', 'black']
+        
+
+        plt.text(0.0, 0.5, "The Night Sky", fontsize=24, fontproperties=fontt, verticalalignment= "center", horizontalalignment="center", color=self.plateFontColor)
 
     def plotHorizon(self, hrotate):
 

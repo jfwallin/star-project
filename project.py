@@ -26,18 +26,34 @@ class project:
         d = (90 - decMax) * math.pi / 180.
         xtmp = math.sin(d)
         ytmp = math.cos(d) + 1
-        #self.decScale = xtmp / ytmp * rMax 
         self.decScale = ytmp / xtmp * rMax 
 
         self.raDelta = 0  # this is used to offset the location so zero is in the right quadrant
         self.raDirection = -1  # direction of the RA projection angle
         self.raRotation = 12  # hours of rotation
 
-        self.projectToPolar = self.projectToStereo
-        self.polarToRADec = self.stereoToRADec
+        if projection == 1:  # standard projection for an astrolabe
+          self.projectToPolar = self.projectToStereo
+          self.raDirection = 1  # direction of the RA projection angle
+          self.polarToRADec = self.stereoToRADec
+    
+        elif projection == 2:  # standard projection for a starwheel
+          self.projectToPolar= self.projectToSimplePolar
+          self.polarToRaDec = self.simplePolarToRADec
 
-        self.projectToPolar = self.projectToSimplePolar
-        self.polarToRADec = self.simplePolarToRADec
+        elif projection == 3:   # TBA - standard projection all sky map
+          self.projectToPolar = self.projectToStarMap
+          self.polarToRADec = self.starMapToRADec
+
+        elif projection == 4:    # standard projection for southern starwheel
+          self.raDirection = 1  # direction of the RA projection angle
+          self.raRotation = 12  # hours of rotation
+          self.projectToPolar= self.projectToSimplePolarSouthern
+          self.polarToRaDec = self.simplePolarToRADecSouthern
+
+        else:
+          print "no project - error - exiting"
+          exit()
 
     def projectToStereo(self, r, d):
     #def projectToPolarStereoGraphic(self, r, d):
@@ -45,7 +61,7 @@ class project:
         # convert the position in to radians associated with a polar plot
         r = (r + self.raRotation) / 24 * 360. * math.pi / 180.
         d = (90 - d) * math.pi / 180.
-        
+      
         # ra and dec are in radians
         # the idea of this project is to project through a point one unit 
         # above the current y location - hence the cos(d) + 1 below
@@ -87,8 +103,6 @@ class project:
         
         # ra and dec are in radians
         rtmp = (90.-d)/(90-self.decMax)
-        #print d, rtmp, self.decScale
-        #rtmp = rtmp * self.decScale
 
         ra_corrected = self.raDirection * ra + self.raDelta
         x = rtmp * math.cos(ra_corrected)
@@ -111,9 +125,121 @@ class project:
 
         return ra, dec
 
+############
+
+    def projectToSimplePolarSouthern(self, r, d):
+
+        # convert the position in to radians associated with a polar plot
+        ra = (r + self.raRotation) / 24 * 360. * math.pi / 180.
+        dec = (90 - d) * math.pi / 180.
+        
+        # ra and dec are in radians
+        rtmp = -(90.+d)/(90-self.decMax)
+
+        ra_corrected = self.raDirection * ra + self.raDelta
+        x = rtmp * math.cos(ra_corrected)
+        y = rtmp * math.sin(ra_corrected)
+        return x, y
+
+    def simplePolarToRADecSouthern(self, x, y):
+        r = math.sqrt(x*x + y*y)
+        #r = r / self.decScale
+
+        ra_corrected  = math.atan2(y, x)
+
+        ra = (ra_corrected - self.raDelta)/self.raDirection  # ra in radians
+        ra = ra * 180.0 / math.pi
+        ra = ra - (self.raRotation*15) 
+        ra = ra % (360.)
+        ra = ra / 15.
+
+        dec = -90 +  r * (90-self.decMax)
+
+        return ra, dec
+
+
 ##########
 
+    def setTime(self, LST, lat):
+      # lst in hours - converted into radians
+      self.lst = LST * 15 * math.pi / 180.
+      self.lat = lat * math.pi / 180.
+      
 
+      self.sLat = math.sin(self.lat)
+      self.cLat = math.cos(self.lat)
+
+      self.azDelta = math.pi /2.0
+      self.azDirection = 1
+        
+    def projectToStarMap(self, r, d):
+    #def projectToPolarStereoGraphic(self, r, d):
+        
+        ra = r * 15 * math.pi/ 180.
+        dec = d * math.pi / 180.
+        ha = (self.lst - ra) % (2.0 * math.pi)
+
+
+        sDec = math.sin(dec)
+        cDec = math.cos(dec)
+
+        sAlt = sDec * self.sLat + cDec * self.cLat * math.cos(ha)
+        Alt = math.asin(sAlt)
+        cAlt = math.cos(Alt)
+
+        cAz = (sDec - sAlt*self.sLat) / (cAlt * self.cLat)
+        cAz = max(min(cAz, 1.0),-1.0)  # fix round off issues
+        Az = math.acos(cAz)
+        sHa = math.sin(ha)
+
+        if sHa >= 0:
+          Az = 2.0* math.pi - Az
+
+        # go to the horizion = math.pi/2.0
+        rtmp = (0.5*math.pi - Alt) / (0.5 * math.pi)
+        az_corrected = self.azDirection * Az + self.azDelta
+
+        x = rtmp * math.cos(az_corrected)
+        y = rtmp * math.sin(az_corrected)
+
+        return x, y
+
+
+
+
+#sin(ALT) = sin(DEC)*sin(LAT)+cos(DEC)*cos(LAT)*cos(HA)
+#ALT = asin(ALT) 
+#
+#                sin(DEC) - sin(ALT)*sin(LAT)
+# cos(A)   =   ---------------------------------
+#                    cos(ALT)*cos(LAT)
+#
+# A = acos(A)
+#
+#If sin(HA) is negative, then AZ = A, otherwise
+#AZ = 360 - A
+
+
+    def starMapToRADec(self, x, y):
+        r = math.sqrt(x*x + y*y)
+        r = r / self.decScale
+
+        ra_corrected  = math.atan2(y, x)
+
+        ra = (ra_corrected - self.raDelta)/self.raDirection  # ra in radians
+        ra = ra * 180.0 / math.pi
+        ra = ra - (self.raRotation*15) 
+        ra = ra % (360.)
+        ra = ra / 15.
+
+        r2 = r * r
+        xx = -(1.0 - r2) / (1 + r2)
+        ddd = math.acos(xx) * 180./math.pi
+        dec = ddd - 90.
+        return ra, dec
+
+
+##########
 
 
     def projectStars(self, starList, xIndex, yIndex):
@@ -216,3 +342,20 @@ if __name__ == "__main__":
       ra, dec =    p.polarToRADec(x, y) 
       print "final = ",ra, dec
       print "----"
+
+
+    p1 = project()
+    p1.setProjection(projection=3, raZero=0, decZero=90, decMax = -23.5, rMax=1)
+    lst = 12.
+    lat = 36.
+    p1.setTime(lst, lat)
+
+    for dec in range(0, 90, 10):
+      x,y, = p1.projectToPolar(12., dec)
+      print dec, x, y
+
+    for ra in range(6,19):
+      x,y, = p1.projectToPolar(float(ra), 0)
+      print ra, x, y
+
+

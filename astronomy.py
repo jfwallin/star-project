@@ -48,15 +48,20 @@ class astronomy:
         self.obs.pressure = 0
         self.obs.date = "2016/12/8 00:36:39.45"
 
+    def setLatLong(self, lat, lon):
+      self.obs.lat = lat
+      self.obs.long = lon
+
+
     def createAltPath(self, alt, npts, hrotate):
 
         altLine = []
         alt = alt * math.pi / 180.
         for i in range(npts+1):
-            az = float(i)/float(npts)  * 360 * math.pi/180.
+            az = float(i)/float(npts)  *  2.0 * math.pi
             r, d = self.obs.radec_of(az, alt)
-            rr = float(r) / (2.0*math.pi) * 24
-            dd = float(d) * 180./math.pi
+            rr = float(r) / (2.0 * math.pi) * 24.0
+            dd = float(d) * 180.0 / math.pi
             rr = (rr + hrotate)%24.
             altLine.append([rr, dd])
         return altLine
@@ -67,9 +72,10 @@ class astronomy:
         az = az * math.pi / 180.
         for i in range(npts+1):
             alt =  (90 - float(i)/float(npts)  * (90-altMin)) * math.pi/180.
-            r, d = self.obs.radec_of(az, alt)
+            r, d = self.obs.radec_of(alt, az)
             rr = float(r) / (2.0*math.pi) * 24
             dd = float(d) * 180./math.pi
+            print "###",self.obs.lat,  rr, dd
             rr = (rr + hrotate) % 24.
             azLine.append([rr, dd])
         return azLine

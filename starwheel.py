@@ -1,4 +1,5 @@
 
+import numpy as np
 from starGraphics import starGraphics as sg
 from project import project as project
 from astronomy import astronomy as astronomy
@@ -19,22 +20,24 @@ class astrolabe:
 
         self.pltConstellationLines = 1
         self.pltNebula = 0
-        self.pltConstellationBoundaries = 1
+        self.pltConstellationBoundaries = 0
         self.pltConstellationLabels = 1
         self.pltEclipticLine = 1
-        self.pltDecLines = 0
-        self.pltRALines = 0
+        self.pltDecLines = 1
+        self.pltRALines = 1
         self.pltDateCircle = 1
+  
 
         # plot the Rete
         self.g = sg(-pltSize, pltSize, -pltSize, pltSize, pltLimit)
         self.g.setStarListIndex(pltStellarMagnitudeLimit)
 
         decMax = -23.5
-        lat = 30 
+        lat = 40 
         decMax = -90 + lat 
         rMax = pltLimit
-        self.plotRete(decMax, rMax)
+        ptype = 2  # plot type
+        self.plotRete(ptype, decMax, rMax)
         self.g.endPlot("rete")
 
 
@@ -49,9 +52,9 @@ class astrolabe:
         
         
 
-    def plotRete(self, decMax, rMax):
+    def plotRete(self, ptype, decMax, rMax):
 
-        self.p.setProjection(1, 0, 90, decMax, rMax )
+        self.p.setProjection(ptype, 0, 90, decMax, rMax )
         pStars = self.p.projectStars( self.s.stars, 5, 6)
         self.g.plotStars(pStars)
         #self.g.plotStarLabels(pStars, 2)
@@ -59,7 +62,8 @@ class astrolabe:
 
         aStars = self.p.projectStars( self.s.astars, 5, 6)
         self.g.plotAstrolabeStarLabels(aStars, 10)
-        
+        pConstellationBoundaries= self.p.projectConstellationBoundaries( self.s.constellationBoundaries)
+
         if self.pltConstellationLines:
             pConstellationLines = self.p.projectConstellationLines( self.s.constellationLines)
             self.g.plotConstellationLines(pConstellationLines)
@@ -69,13 +73,11 @@ class astrolabe:
             self.g.plotNebula(pNebula, 5)
         
         if self.pltConstellationBoundaries:
-            pConstellationBoundaries= self.p.projectConstellationBoundaries( self.s.constellationBoundaries)
             self.g.plotConstellationBoundaries(pConstellationBoundaries)
 
         if self.pltConstellationLabels:
-            self.g.plotConstellationLabels2(pConstellationBoundaries)
-            #self.g.plotConstellationLabels(pConstellationBoundaries)
-        
+            self.plotConstellationLabels()  
+  
         if self.pltEclipticLine:
             eclipLine = self.a.createEclipticPath()
             pEclipLine = self.p.projectSimpleLine(eclipLine)
@@ -102,7 +104,26 @@ class astrolabe:
         self.g.plotSimpleLine(pAltLine)
 
 
- 
+    def plotConstellationLabels(self): 
+
+        cLabelList = []
+        fn = "constellation_list.txt"
+        ff = open(fn,"r")
+        clist = ff.readlines()
+        ff.close()
+        for cc in clist:
+          c = cc.split(", ")
+          sname = c[0]
+          label = c[1]
+          lra = float(c[2])
+          ldec = float(c[3])
+          xcenter, ycenter = self.p.projectToPolar(lra, ldec) 
+          theta = np.arctan2(ycenter,xcenter)*180./np.pi + 90.
+
+          cLabelList.append([xcenter, ycenter, theta, label.upper()])
+  
+        self.g.plotConstellationLabels(cLabelList)
+
 
 
 if __name__ == "__main__":

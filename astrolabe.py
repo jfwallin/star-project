@@ -31,10 +31,29 @@ class astrolabe:
         self.starWheelRete = 1
         self.starWheelPlate = 2
         self.skymap = 3
+        self.astrolabeReteStars = 4
+        self.astrolabePlate = 5
+        self.southernStarWheelRete = 6
+        self.southernStarWheelPlate = 7
+        lat = 53 
+        lon = 0
+        #self.a.setLatLong(lat, lon)
+ 
+        xx = self.starWheelPlate
+        xx = self.starWheelPlate
 
-        lat = 40
-        self.createPlot(self.starWheelPlate, lat)
 
+        xx = self.starWheelRete
+        self.createPlot(xx, lat)
+
+        xx = self.starWheelPlate
+        self.createPlot(xx, lat)
+
+        xx = self.southernStarWheelRete
+#        self.createPlot(xx, lat)
+
+        xx = self.southernStarWheelPlate
+        self.createPlot(xx, lat)
 
 
 
@@ -42,16 +61,22 @@ class astrolabe:
 
       self.g = sg(-self.pltSize, self.pltSize, -self.pltSize, self.pltSize, self.pltLimit)
       self.g.setStarListIndex(self.pltStellarMagnitudeLimit)
-      decMax = -90 + lat 
       rMax = self.pltLimit
+      hrotate = 18.
+
+      if lat > 33:
+        decMax = -90 + lat 
+      else:
+        decMax = -23.5
+
 
       # plot the Rete
       if plotType == self.starWheelRete:
         ptype = 2  # plot type
         self.p.setProjection(ptype, 0, 90, decMax, rMax )
         self.plotRete(ptype, decMax, rMax)
+        self.plotHorizon(hrotate)
         self.g.endPlot("rete")
-      
 
       #plot the Plate
       elif plotType == self.starWheelPlate:
@@ -60,7 +85,7 @@ class astrolabe:
         ptype = 2
         self.p.setProjection(ptype, 0, 90, decMax, rMax )
         self.plotHorizon(hrotate)
-        self.g.plate(lat, rMax)
+        self.g.plate(ptype,lat,decMax, rMax)
         self.g.endPlot("plate")
         
         # plot the skymap
@@ -68,11 +93,38 @@ class astrolabe:
         ptype = 3
         self.p.setProjection(ptype, 0, 90, decMax, rMax )
         self.plotStarMap(lat)
+        self.g.endPlot("skymap")
+      
+      elif plotType == self.astrolabeReteStars:
+        ptype = 1  # plot type
+        self.p.setProjection(ptype, 0, 90, decMax, rMax )
+        self.plotRete(ptype, decMax, rMax)
+        self.g.endPlot("rete")
+        
+      elif plotType == self.southernStarWheelRete:
+        ptype = 4  # plot type
+        self.p.setProjection(ptype, 0, 90, decMax, rMax )
+        self.plotRete(ptype, decMax, rMax)
+        self.g.endPlot("south-rete")
+ 
+       #plot the Plate
+      elif plotType == self.southernStarWheelPlate:
+        hrotate = 18
+        #self.g.drawBoundingCircle( "red")
+        ptype = 4
+        self.p.setProjection(ptype, 0, 90, decMax, rMax )
+        self.plotHorizon(hrotate)
+        self.g.plate(ptype,lat,decMax, rMax)
+        self.plotRete(ptype, decMax, rMax)
+        #self.g.plate(ptype, lat, decMax, rMax)
+        self.g.endPlot("south-plate")
+
       else:
         print "no such plot type"
         exit()
+
+
         
-      self.g.endPlot("skymap")
 
 
 
@@ -122,7 +174,6 @@ class astrolabe:
         self.pltRALines = 1
         if self.pltRALines:
             #raHours = [0]
-            print "plotting!"
             decMax = -90 + lat 
             raHours = range(0,24)
             self.plotRaCurves( raHours, decMax)
@@ -198,7 +249,7 @@ class astrolabe:
 
     def plotHorizon(self, hrotate):
 
-        npts = 60
+        npts = 70
         altLine = self.a.createAltPath( 0.0, npts, hrotate)
         pAltLine = self.p.projectSimpleLine(altLine)
         self.g.plotSimpleLine(pAltLine)

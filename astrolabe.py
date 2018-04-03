@@ -75,7 +75,7 @@ class astrolabe:
         ptype = 2  # plot type
         self.p.setProjection(ptype, 0, 90, decMax, rMax )
         self.plotRete(ptype, decMax, rMax)
-        self.plotHorizon(hrotate)
+        #self.plotHorizon(hrotate)
         self.g.endPlot("rete")
 
       #plot the Plate
@@ -84,7 +84,7 @@ class astrolabe:
         #self.g.drawBoundingCircle( "red")
         ptype = 2
         self.p.setProjection(ptype, 0, 90, decMax, rMax )
-        self.plotHorizon(hrotate)
+        #self.plotHorizon(hrotate)
         self.g.plate(ptype,lat,decMax, rMax)
         self.g.endPlot("plate")
         
@@ -113,8 +113,8 @@ class astrolabe:
         #self.g.drawBoundingCircle( "red")
         ptype = 4
         self.p.setProjection(ptype, 0, 90, decMax, rMax )
-        self.plotHorizon(hrotate)
-        self.g.plate(ptype,lat,decMax, rMax)
+        #self.plotHorizon(hrotate)
+        #self.g.plate(ptype,lat,decMax, rMax)
         self.plotRete(ptype, decMax, rMax)
         #self.g.plate(ptype, lat, decMax, rMax)
         self.g.endPlot("south-plate")
